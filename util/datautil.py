@@ -4,6 +4,7 @@ import numpy as np
 import pdb
 from datetime import datetime
 
+
 def load_hypocenters(csv_path):
     """Load dataset from a CSV file.
 
@@ -37,7 +38,38 @@ def load_hypocenters(csv_path):
 
     return time, lat, lon, depth, mag
 
-def load_puuoo(csv_path):
+def load_puuoo_eqs(csv_path):
+    """
+    Load wovodat PuuOo csv
+    :param
+        csv_path: path to csv
+    :return
+        data arrays
+    """
+    # Load headers
+    with open(csv_path, 'r') as csv_fh:
+        headers = csv_fh.readline().strip().split(',')
+
+    # Load features and labels
+    tcol   = [i for i in range(len(headers)) if headers[i]=='Date-time']
+    latcol = [i for i in range(len(headers)) if headers[i]=='Latitude']
+    loncol = [i for i in range(len(headers)) if headers[i]=='Longitude']
+    depcol = [i for i in range(len(headers)) if headers[i]=='Depth']
+    magcol = [i for i in range(len(headers)) if headers[i]=='Magnitude']
+
+    tTmp = np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=tcol, dtype='str')
+    lat  = np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=latcol)
+    lon  = np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=loncol)
+    depth= np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=depcol)
+    mag  = np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=magcol)
+
+    ttmp = [s.split('.')[0] for s in tTmp]
+    time = [datetime.strptime(tstr, '%m/%d/%Y %H:%M:%S') for tstr in ttmp]
+
+    return time, lat, lon, depth, mag
+
+
+def load_puuoo_eruptions(csv_path):
     """Load dataset from a CSV file.
 
     Args:
@@ -82,7 +114,7 @@ def load_puuoo(csv_path):
 class PuuOo:
     def __init__(self, csv_path):
         self.csv_path = csv_path
-        id, t, length, repose, flow_area, flow_volume, rate, location = load_puuoo(csv_path)
+        id, t, length, repose, flow_area, flow_volume, rate, location = load_puuoo_eruptions(csv_path)
         self.id = id
         self.dates = t
         self.length = length
@@ -92,16 +124,23 @@ class PuuOo:
         self.rate = rate
         self.location = location
 
-    def was_erupting(self, time):
+    def was_erupting(self, time, verbose=False):
         # Find closest event
-        event = max([i for i in self.dates if time > i])
-        idx = self.dates.index(event)
-        event_length = self.length[idx]
+        try:
+            event = max([i for i in self.dates if time > i])
+            idx = self.dates.index(event)
+            event_length = self.length[idx]
 
-        # Get time difference
-        time_diff = time - event
-        timediff_hours = time_diff.days*24 + time_diff.seconds/3600
+            # Get time difference
+            time_diff = time - event
+            timediff_hours = time_diff.days*24 + time_diff.seconds/3600
 
-        # give a 24h buffer window because we aren't sure the time of the eruption
-        return timediff_hours < event_length + 24
+            # give a 24h buffer window because we aren't sure the time of the eruption
+            return timediff_hours < event_length + 24
 
+        except:
+            if verbose:
+                print(f'Time {str(time)} is before eruption history begins')
+                return None
+            else:
+                return None
