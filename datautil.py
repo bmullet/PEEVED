@@ -32,24 +32,8 @@ def load_hypocenters(csv_path):
     depth= np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=depcol)
     mag  = np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=magcol)
 
-    # parse the time into something understandable
-    Neq  = len(mag)
-    time = np.zeros((Neq, 6))
-    # year, month, day, hour, min, sec
-
-    for eqi in range(Neq):
-        ymd, hms = tTmp[eqi].split('T')
-
-        year,month,day  = ymd.split('-')
-        hour,minute,sec = hms.split(':')
-        sec,junk        = sec.split('.')
-
-        time[eqi,0] = float(year)
-        time[eqi,1] = float(month)
-        time[eqi,2] = float(day)
-        time[eqi,3] = float(hour)
-        time[eqi,4] = float(minute)
-        time[eqi,5] = float(sec)
+    ttmp = [s.split('.')[0] for s in tTmp]
+    time = [datetime.strptime(tstr, '%Y-%m-%dT%H:%M:%S') for tstr in ttmp]
 
     return time, lat, lon, depth, mag
 
