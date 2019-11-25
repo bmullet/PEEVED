@@ -2,6 +2,7 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import pdb
+from itertools import compress
 from datetime import datetime
 
 
@@ -110,6 +111,26 @@ def load_puuoo_eruptions(csv_path):
     location = np.loadtxt(csv_path, delimiter=',', skiprows=1, usecols=loccol, dtype='str')
 
     return id, t, length, repose, flow_area, flow_volume, rate, location
+
+
+def prune_data(time, lat, lon, depth, mag, puuoo):
+    """
+    Prune data by removing all eqs that happened before eruption catalogue starts
+    WARNING: be careful with datatypes (assumes you want list for time and numpy array for other vars)
+    """
+
+    idx = [puuoo.was_erupting(t) is not None for t in time]
+    
+    time  = list(compress(time, idx))
+    lat   = np.array(list(compress(lat, idx)))
+    lon   = np.array(list(compress(lon, idx)))
+    depth = np.array(list(compress(depth, idx)))
+    mag   = np.array(list(compress(mag, idx)))
+    
+    return time, lat, lon, depth, mag
+
+
+
 
 class PuuOo:
     def __init__(self, csv_path):
