@@ -141,6 +141,6 @@ class PuuOo:
         except:
             if verbose:
                 print(f'Time {str(time)} is before eruption history begins')
-                return None
+                return False
             else:
-                return None
+                return False
