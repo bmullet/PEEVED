@@ -129,6 +129,82 @@ def prune_data(time, lat, lon, depth, mag, puuoo):
     
     return time, lat, lon, depth, mag
 
+def GetTimeToEruption (EQtime, p):
+    """
+    For each earthquake, determine the time TO eruption in seconds. 
+    If you want it in other units, just convert outside the function.
+    """
+    
+    SecsToEruption = np.zeros(len(EQtime))
+
+    for di in range(len(EQtime)):
+
+        NextEruptions = [i for i in p.dates if i>EQtime[di]]
+
+        if p.was_erupting(EQtime[di]):
+            SecsToEruption[di] = 0
+
+        elif not NextEruptions:
+            SecsToEruption[di] = np.nan
+
+        else:        
+            timediff = NextEruptions[0] - EQtime[di]
+            SecsToEruption[di] = timediff.days*24*3600 + timediff.seconds
+            
+    
+    return SecsToEruption
+
+def GetTimeSinceEruption (EQtime, p):
+    """
+    For each earthquake, determine the time SINCE eruption in seconds. 
+    If you want it in other units, just convert outside the function.
+    """
+    
+    SecsSinceEruption = np.zeros(len(EQtime))
+    t0 = datetime(1982, 9, 25)  # time of previous eruption at Halemaumau
+    
+    for di in range(len(EQtime)):
+        PrevEruption = [i for i in p.dates if EQtime[di]>i]
+        
+        if p.was_erupting(EQtime[di]):
+            SecsSinceEruption[di] = 0
+
+        elif not PrevEruption:
+            timediff = EQtime[di] - t0
+            SecsSinceEruption[di] = timediff.days*24*3600 + timediff.seconds
+
+        else:        
+            PrevEruptionIndex = p.dates.index(PrevEruption[-1])
+            timediff = EQtime[di] - PrevEruption[-1]
+            SecsSinceEruption[di] = timediff.days*24*3600 + timediff.seconds - p.length[PrevEruptionIndex]*3600
+            
+    return SecsSinceEruption
+
+def GetEQRates (EQtime):
+    """
+    Returns the number of earthquakes in the 
+    last day, last week (7 days) and last month (30 days) 
+    leading up to each earthquake
+    """
+    
+    EQsLastDay   = np.zeros(len(EQtime))
+    EQsLastWeek  = np.zeros(len(EQtime))
+    EQsLastMonth = np.zeros(len(EQtime))
+    
+    for di in range(len(EQtime)):
+        timediff = [EQtime[di] - EQtime[ti] for ti in range(len(EQtime))]
+        
+        EQsLastDay[di]   = len([i for i in range(len(EQtime)) if timediff[i].days==0 and EQtime[di]>EQtime[i]])
+        EQsLastWeek[di]  = len([i for i in range(len(EQtime)) if timediff[i].days<=7 and timediff[i].days>=0 and EQtime[di]>EQtime[i]])
+        EQsLastMonth[di] = len([i for i in range(len(EQtime)) if timediff[i].days<=30 and timediff[i].days>=0 and EQtime[di]>EQtime[i]])
+    
+    return EQsLastDay, EQsLastWeek, EQsLastMonth
+
+
+
+
+
+
 
 
 
